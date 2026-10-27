@@ -10,6 +10,8 @@ const UNPLACED: UiPane = { ...PLACED, isPlaced: false }
 const PANE_PROPS = { title: '코딩 뷰어', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } as const
 const SPINNER_PROPS = { word: 'Working', message: null, suffix: '', mode: 'tool-input' } as const
 const SURFACES = ['terminal', 'desktop', 'mobile', 'vscode'] as const
+// 엔진은 쓴 파일의 경로를 시스템 모양으로 넘긴다(Windows는 /cfg가 C:\cfg가 된다). 그래서 \를 /로 맞춰 끝부분만 본다
+const writtenTo = (tail: string) => (path: string) => path.replaceAll('\\', '/').endsWith(tail)
 
 type World = { sets: View[]; opens: number; titles: string[]; closes: string[]; writes: string[]; nextCalls: number; isClosed: boolean; statuses: string[] }
 type Options = { panes?: UiPane[]; failAt?: number; isPanesBroken?: boolean; opened?: UiOpenResult; surfaces?: { now: ('terminal' | 'desktop')[] }; env?: Record<string, string> }
@@ -414,7 +416,7 @@ test('패널이 안 놓였으면 진행 줄 자리로 돌리고, 프롬프트마
   await clock.advance(40)
   expect(seen.opens).toBe(3)
   expect(seen.writes.length).toBeGreaterThan(0)
-  expect(seen.writes.every(path => path === '/home/test/.claude/live-viewer/status/test-session.json')).toBe(true)
+  expect(seen.writes.every(writtenTo('/home/test/.claude/live-viewer/status/test-session.json'))).toBe(true)
 })
 
 // 로그까지 던지는 경우는 register-off.test.ts.
@@ -498,7 +500,7 @@ test('CLAUDE_CONFIG_DIR이 있으면 상태 파일은 그 아래', { options: { 
   await $.command.run(LIVE)
   await clock.advance(40)
   expect(seen.writes.length).toBeGreaterThan(0)
-  expect(seen.writes.every(path => path === '/cfg/live-viewer/status/test-session.json')).toBe(true)
+  expect(seen.writes.every(writtenTo('/cfg/live-viewer/status/test-session.json'))).toBe(true)
 })
 
 for (const [name, options, title] of [['auto', {}, '코딩 뷰어'], ['en', EN, 'Live viewer']] as const) {
