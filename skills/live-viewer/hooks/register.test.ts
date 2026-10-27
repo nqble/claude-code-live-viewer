@@ -501,6 +501,16 @@ test('CLAUDE_CONFIG_DIR이 있으면 상태 파일은 그 아래', { options: { 
   expect(seen.writes.every(path => path === '/cfg/live-viewer/status/test-session.json')).toBe(true)
 })
 
+test('HOME이 없는 Windows에서는 USERPROFILE 아래에 상태 파일을 쓴다', { options: { debug: true } }, async ($, on) => {
+  const clock = mock.clock(on)
+  const seen = world(on, [], { opened: { isPlaced: false, reason: 'narrow' }, env: { USERPROFILE: 'C:\\Users\\me' } })
+  await $.command.run(LIVE)
+  await clock.advance(40)
+  expect(seen.writes.length).toBeGreaterThan(0)
+  // 엔진은 경로를 시스템 모양으로 바꿔 넘긴다(Windows는 \, 다른 시스템은 C:\…를 상대 경로로 본다). 그래서 /로 맞춘 끝부분만 본다
+  expect(seen.writes.every(path => path.replaceAll('\\', '/').endsWith('Users/me/.claude/live-viewer/status/test-session.json'))).toBe(true)
+})
+
 for (const [name, options, title] of [['auto', {}, '코딩 뷰어'], ['en', EN, 'Live viewer']] as const) {
   test(`로캘 변수가 ko일 때 language ${name}면 탭 제목은 ${title}`, options, async ($, on) => {
     const clock = mock.clock(on)

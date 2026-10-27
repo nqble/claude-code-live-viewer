@@ -103,12 +103,17 @@ function keepLast(rows: StatusRow[], row: StatusRow): void {
   if (rows.length > STATUS_KEEP) rows.splice(0, rows.length - STATUS_KEEP)
 }
 
+// 홈 폴더. Windows에는 보통 HOME이 없고(Git Bash 등이 붙여 줄 때만 있다) USERPROFILE이 홈이다.
+async function homeOf($: EngineInterface): Promise<string | undefined> {
+  return (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE'))
+}
+
 async function writeStatus($: EngineInterface): Promise<void> {
   if (statusTarget === null) {
     const config = await $.env.get('CLAUDE_CONFIG_DIR')
-    const home = await $.env.get('HOME')
+    const home = await homeOf($)
     const base = config ?? (home === undefined ? undefined : `${home}/.claude`)
-    if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME is set')
+    if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME (USERPROFILE on Windows) is set')
     statusTarget = `${base}/live-viewer/status/${await $.session.id()}.json`
   }
   status.updated = nowIso()
@@ -398,7 +403,7 @@ function prepare($: EngineInterface): void {
     $.session.surfaces().then(list => noteSurfaces($, list), ignore)
     // 경로 줄이기는 보기 좋으라고 하는 일이라 못 읽으면 전체 경로를 그대로 그린다.
     $.session.cwd().then(cwd => (places = { ...places, cwd }), ignore)
-    $.env.get('HOME').then(home => (places = { ...places, home: home ?? null }), ignore)
+    homeOf($).then(home => (places = { ...places, home: home ?? null }), ignore)
     if (isCommandReady) return
     isCommandReady = true
     void settleLanguage($).then(() => $.command.register({ name: 'live', description: words.command }).catch(error => noteError($, 'command.register', error)))

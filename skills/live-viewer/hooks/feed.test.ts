@@ -32,7 +32,26 @@ describe('한 줄 인자', () => {
     expect(shortPath('/repo', PLACES)).toBe('/repo')
     expect(shortPath('/repo2/a', PLACES)).toBe('/repo2/a')
     expect(shortPath('/x', { cwd: null, home: null })).toBe('/x')
+    expect(shortPath('/Repo/a', PLACES)).toBe('/Repo/a')
     expect([isHidden('mcp__ccd_turn__update_plan'), isHidden('TodoWrite'), isHidden('Read'), isHidden('mcp__gh__x')]).toEqual([true, true, false, false])
+  })
+})
+
+describe('Windows 경로', () => {
+  const WINDOWS = { cwd: 'C:\\Users\\me\\repo', home: 'C:\\Users\\me' }
+
+  test('세션 폴더는 상대, 홈은 ~, 구분자는 원래 것 그대로', () => {
+    expect(shortPath('C:\\Users\\me\\repo\\src\\a.ts', WINDOWS)).toBe('src\\a.ts')
+    expect(shortPath('C:\\Users\\me\\Documents\\b.txt', WINDOWS)).toBe('~\\Documents\\b.txt')
+    expect(lineArgs('Read', { file_path: 'C:\\Users\\me\\repo\\src\\a.ts', offset: 3, limit: 2 }, WINDOWS)).toBe('src\\a.ts:3-4')
+  })
+
+  test('드라이브 글자 대소문자와 / 섞어 쓰기는 같은 폴더, 이름만 비슷한 옆 폴더는 그대로', () => {
+    expect(shortPath('c:\\users\\me\\x.md', WINDOWS)).toBe('~\\x.md')
+    expect(shortPath('C:/Users/me/repo/a.ts', WINDOWS)).toBe('a.ts')
+    expect(shortPath('C:\\Users\\me\\repo2\\a.ts', WINDOWS)).toBe('~\\repo2\\a.ts')
+    expect(shortPath('D:\\Users\\me\\a.ts', WINDOWS)).toBe('D:\\Users\\me\\a.ts')
+    expect(shortPath('C:\\Users\\me\\repo\\', { cwd: 'C:\\Users\\me\\repo\\', home: null })).toBe('C:\\Users\\me\\repo\\')
   })
 })
 

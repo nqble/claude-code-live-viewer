@@ -10,11 +10,29 @@ export const isHidden = (tool: string) => tool.startsWith('mcp__ccd_') || tool =
 
 export type Places = { cwd: string | null; home: string | null }
 
-// 세션 폴더 안이면 상대 경로, 홈 안이면 ~로 줄인다.
+// 세션 폴더 안이면 상대 경로, 홈 안이면 ~로 줄인다. Windows 경로(C:\Users\me)도 같다: \ 구분자, / 섞어 쓰기, 드라이브
+// 글자 대소문자 차이를 같은 폴더로 본다.
 export function shortPath(path: string, places: Places): string {
-  if (places.cwd !== null && path.startsWith(`${places.cwd}/`)) return path.slice(places.cwd.length + 1)
-  if (places.home !== null && path.startsWith(`${places.home}/`)) return `~${path.slice(places.home.length)}`
+  const inCwd = places.cwd === null ? null : restUnder(path, places.cwd)
+  if (inCwd !== null) return inCwd
+  const inHome = places.home === null ? null : restUnder(path, places.home)
+  if (inHome !== null) return `~${path[path.length - inHome.length - 1]}${inHome}`
   return path
+}
+
+// Windows 경로는 드라이브 글자(C:\, c:/)나 \\서버로 시작한다. 이런 경로는 대소문자를 가리지 않고 \와 /를 같게 본다.
+const isWindowsPath = (path: string) => /^[A-Za-z]:[\\/]/.test(path) || path.startsWith('\\\\')
+const comparable = (path: string, isWindows: boolean) => (isWindows ? path.replaceAll('\\', '/').toLowerCase() : path)
+
+// path가 폴더 base 바로 아래면 구분자 뒤의 나머지를, 아니면 null. base 끝의 구분자는 무시한다.
+function restUnder(path: string, base: string): string | null {
+  const folder = base.replace(/[\\/]+$/, '')
+  if (folder === '' || path.length <= folder.length + 1) return null
+  const separator = path[folder.length]
+  if (separator !== '/' && separator !== '\\') return null
+  const isWindows = isWindowsPath(folder)
+  if (comparable(path.slice(0, folder.length), isWindows) !== comparable(folder, isWindows)) return null
+  return path.slice(folder.length + 1)
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
