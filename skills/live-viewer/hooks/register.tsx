@@ -5,7 +5,7 @@ import type { Entry, Item, Todo, View } from '../types'
 import { drawBox, drawView, type Layout, paletteOf } from './draw'
 import { type Answer, settledEntry, shownOf, streamingEntry } from './entry'
 import { toDisplay } from './display'
-import { appendText, applyTodos, isHidden, isTodoTool, lineArgs, type Places, parseRaw, RAW_LIMIT, TEXT_LIMIT } from './feed'
+import { appendText, applyTodos, keepRecent, isHidden, isTodoTool, lineArgs, type Places, parseRaw, RAW_LIMIT, TEXT_LIMIT } from './feed'
 import { feed, initialState, type State } from './partial'
 import { EN, languageOf, type Words, wordsOf } from './words'
 
@@ -265,11 +265,11 @@ function put(entry: Entry): void {
     items = items.map((known, i) => (i === at ? item : known))
     return
   }
-  items = [...items, item].slice(-MAX_ITEMS)
+  items = keepRecent([...items, item], MAX_ITEMS)
 }
 
 function putLine(id: string, tool: string, args: string): void {
-  items = [...items, { type: 'line' as const, id, tool, args }].slice(-MAX_ITEMS)
+  items = keepRecent([...items, { type: 'line' as const, id, tool, args }], MAX_ITEMS)
 }
 
 // 상자 밖 도구의 입력이 끝났다: 할 일 도구면 할 일을 고치고, 숨길 도구가 아니면 한 줄로 싣는다. 표시가 바뀌었으면 true.

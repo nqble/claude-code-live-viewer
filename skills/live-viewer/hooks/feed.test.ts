@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { appendText, applyTodos, isHidden, lineArgs, parseRaw, RAW_LIMIT, shortPath, TEXT_LIMIT } from './feed'
+import { appendText, applyTodos, keepRecent, isHidden, lineArgs, parseRaw, RAW_LIMIT, shortPath, TEXT_LIMIT } from './feed'
 
 const PLACES = { cwd: '/repo', home: '/home/me' }
 
@@ -49,6 +49,15 @@ describe('답·생각 글 잇기', () => {
     expect(items.at(-1)).toEqual({ type: 'text', id: 's/1', text: 'x'.repeat(TEXT_LIMIT) })
     items = appendText(appendText(items, 'text', 't/1', 'a', 3), 'text', 't/2', 'b', 3)
     expect(items.map(item => (item.type === 'box' ? item.entry.id : item.id))).toEqual(['s/1', 't/1', 't/2'])
+  })
+})
+
+describe('기록 상한', () => {
+  test('글이 많아도 도구 줄은 밀려나지 않는다', () => {
+    const line = (id: string) => ({ type: 'line' as const, id, tool: 'Bash', args: '' })
+    const text = (id: string) => ({ type: 'text' as const, id, text: id })
+    const items = keepRecent([line('l1'), line('l2'), text('a'), text('b'), text('c'), line('l3')], 2)
+    expect(items.map(item => (item.type === 'box' ? item.entry.id : item.id))).toEqual(['l2', 'b', 'c', 'l3'])
   })
 })
 

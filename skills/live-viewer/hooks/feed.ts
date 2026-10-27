@@ -57,6 +57,19 @@ export function parseRaw(raw: string): unknown {
 export const TEXT_LIMIT = 4000
 
 // 같은 id(단계·블록)의 마지막 글 항목에 이어 붙이고, 아니면 새 항목. 원문은 끝 TEXT_LIMIT자만 둔다.
+// 도구 상자·줄과 답·생각 글은 상한을 따로 센다. 긴 답이 이어져도 도구 기록이 밀려나지 않게 하려는 것.
+export function keepRecent(items: readonly Item[], limit: number): Item[] {
+  let tools = 0
+  let texts = 0
+  const kept: Item[] = []
+  for (const item of [...items].reverse()) {
+    const isText = item.type === 'text' || item.type === 'thinking'
+    const count = isText ? ++texts : ++tools
+    if (count <= limit) kept.push(item)
+  }
+  return kept.reverse()
+}
+
 export function appendText(items: readonly Item[], type: 'text' | 'thinking', id: string, piece: string, limit: number): Item[] {
   const lastItem = items.at(-1)
   if (lastItem !== undefined && lastItem.type === type && lastItem.id === id) {
@@ -64,7 +77,7 @@ export function appendText(items: readonly Item[], type: 'text' | 'thinking', id
     // 서로게이트 짝은 표시 사본(toDisplay)이 맞추므로 여기서는 길이만 자른다.
     return [...items.slice(0, -1), { type, id, text: joined.length > TEXT_LIMIT ? joined.slice(-TEXT_LIMIT) : joined }]
   }
-  return [...items, { type, id, text: piece.slice(-TEXT_LIMIT) }].slice(-limit)
+  return keepRecent([...items, { type, id, text: piece.slice(-TEXT_LIMIT) }], limit)
 }
 
 const TODO_WRITE = 'TodoWrite'
