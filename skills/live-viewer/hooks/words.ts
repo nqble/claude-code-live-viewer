@@ -15,6 +15,9 @@ export type Words = {
   overwritten: string
   interrupted: string
   denied: string
+  paused: string
+  resumed: string
+  pausedPane: string
 }
 
 export const EN: Words = {
@@ -32,6 +35,9 @@ export const EN: Words = {
   overwritten: 'overwritten',
   interrupted: 'interrupted',
   denied: 'denied',
+  paused: 'Paused the live viewer. /live resume shows it again.',
+  resumed: 'The live viewer is showing again.',
+  pausedPane: 'Paused. Type /live resume to show tool calls again.',
 }
 
 export const KO: Words = {
@@ -49,6 +55,9 @@ export const KO: Words = {
   overwritten: '덮어씀',
   interrupted: '중단됨',
   denied: '거절됨',
+  paused: '코딩 뷰어를 멈췄다. /live resume으로 다시 보인다.',
+  resumed: '코딩 뷰어를 다시 보인다.',
+  pausedPane: '멈춤. /live resume을 입력하면 다시 보인다.',
 }
 
 export type Language = 'en' | 'ko'

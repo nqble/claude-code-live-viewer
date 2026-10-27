@@ -45,6 +45,8 @@ cp -R claude-code-live-viewer/skills/live-viewer ~/.claude/skills/
 
 Start a new Claude Code session. The **Live viewer** tab opens automatically. If you close it, `/live` brings it back.
 
+On stream or recording? `/live pause` hides the tab's content until `/live resume`. Values that look like secrets (API keys, tokens, `KEY=value` lines) show as `••••`; this catches common shapes only, and the `mask` option turns it off.
+
 If you installed an earlier version with `claude plugin install`, remove it so only one tab opens:
 
 ```bash

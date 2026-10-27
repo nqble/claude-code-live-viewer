@@ -41,6 +41,8 @@ export type View = {
   todos: readonly Todo[]
   isWorking: boolean
   isOff: boolean
+  // /live pause로 멈췄을 때 true. 그동안 items·todos는 비워서 보낸다(가린 내용이 패널에 닿지 않게).
+  isPaused: boolean
   // 어디에 그리나: pane은 패널, spinner는 패널이 안 놓여 대화창 맨 아래 진행 줄 자리,
   // hidden은 사람이 패널을 손으로 닫아 아무 데도(/live로 다시 연다).
   seat: 'pane' | 'spinner' | 'hidden'

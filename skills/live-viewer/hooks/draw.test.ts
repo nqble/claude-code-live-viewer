@@ -62,7 +62,7 @@ const VIEWS: View[] = [
   items: [...all.slice(i), ...all.slice(0, i)].reverse().map(([s, t, k], j) => box(entry(`c${j}`, t as string, s as Entry['status'], k as Entry['kind'], k === 'diff' ? '@@ -1,1 +1,1 @@\n-a\n+b' : 'a\nb'))),
   todos: [],
   isWorking: false,
-  isOff: false,
+  isOff: false, isPaused: false,
   seat: 'pane' as const,
 }))
 const OTHERS: View[] = [
@@ -73,11 +73,11 @@ const OTHERS: View[] = [
     ],
     todos: [],
     isWorking: false,
-    isOff: false,
+    isOff: false, isPaused: false,
     seat: 'pane',
   },
-  { items: [box(entry('e', 'Bash', 'done', 'output'))], todos: [], isWorking: false, isOff: false, seat: 'pane' },
-  { items: [], todos: [], isWorking: false, isOff: false, seat: 'pane' },
+  { items: [box(entry('e', 'Bash', 'done', 'output'))], todos: [], isWorking: false, isOff: false, isPaused: false, seat: 'pane' },
+  { items: [], todos: [], isWorking: false, isOff: false, isPaused: false, seat: 'pane' },
   { items: [], todos: [], isWorking: false, isOff: true, seat: 'pane' },
   {
     items: [
@@ -90,14 +90,14 @@ const OTHERS: View[] = [
       { content: '셋', status: 'pending', activeForm: null },
     ],
     isWorking: true,
-    isOff: false,
+    isOff: false, isPaused: false,
     seat: 'pane',
   },
 ]
 const NOW = 1_800_000_000_000
 
 // 엔진 자리: 패널·진행 줄. 그릴 표시는 시험이 $.state 읽기 답으로 넣는다.
-let shown: View = { items: [], todos: [], isWorking: false, isOff: false, seat: 'pane' }
+let shown: View = { items: [], todos: [], isWorking: false, isOff: false, isPaused: false, seat: 'pane' }
 
 function world(on: On): void {
   on('state.get', (_engine, e, next) => (e.key === CALLS.key ? { value: { value: shown, version: 1 } } : next(e)))
@@ -232,7 +232,7 @@ test('할 일 나무는 끝/전체를 달고, 8개를 넘으면 진행 중 근�
   world(on)
   await clock.settle()
   const many = Array.from({ length: 10 }, (_, i) => ({ content: `일 ${i + 1}`, status: i < 5 ? ('completed' as const) : i === 5 ? ('in_progress' as const) : ('pending' as const), activeForm: i === 5 ? '여섯째 하는 중' : null }))
-  shown = { items: [], todos: many, isWorking: true, isOff: false, seat: 'pane' }
+  shown = { items: [], todos: many, isWorking: true, isOff: false, isPaused: false, seat: 'pane' }
   const pane = await $.ui.mount({ plugin: 'live-viewer', surface: 'desktop', component: 'Pane', requestId: 'live', props: PANE_PROPS })
   expect(await pane.find({ type: 'Text', text: ' · 5/10' })).toBeDefined()
   // 진행 중(6번째) 앞 둘부터 8개: 3~10번째. 위로 접힌 둘은 `… 2 more`.
@@ -260,7 +260,7 @@ test('palette light는 터미널에서도 light 배경, language ko는 한국어
   await pane.unmount()
   expect(found.colors.has(LIGHT.pending) || found.colors.has(LIGHT.done) || found.colors.has(LIGHT.failed)).toBe(true)
   expect([TITANIUM.pending, TITANIUM.failed].filter(color => found.colors.has(color))).toEqual([])
-  shown = { items: [], todos: [], isWorking: false, isOff: false, seat: 'pane' }
+  shown = { items: [], todos: [], isWorking: false, isOff: false, isPaused: false, seat: 'pane' }
   const empty = await $.ui.mount({ plugin: 'live-viewer', surface: 'terminal', component: 'Pane', requestId: 'live', props: PANE_PROPS })
   expect(await empty.find({ type: 'Text', text: 'Claude가 도구를 부르면 여기 실시간으로 찍힌다' })).toBeDefined()
   await empty.unmount()

@@ -11,6 +11,7 @@
   "userConfig": {
     "language": { "type": "string", "title": "Language", "description": "Language of the tab title and labels. auto: Korean when your locale (LC_ALL, LC_MESSAGES, LANG) is Korean or your time zone is Asia/Seoul, English otherwise", "default": "auto", "options": ["auto", "en", "ko"] },
     "palette": { "type": "string", "title": "Palette", "description": "Box colors. auto: light in the desktop app, follows the theme in the terminal", "default": "auto", "options": ["auto", "light", "dark"] },
+    "mask": { "type": "boolean", "title": "Hide secrets", "description": "Show values that look like secrets (API keys, tokens, KEY=value lines) as •••• in the tab. Common shapes only, not a guarantee", "default": true },
     "debug": { "type": "boolean", "title": "Debug status file", "description": "Write a per-session status file under live-viewer/status/ in the Claude config folder", "default": false }
   }
 }

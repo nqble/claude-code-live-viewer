@@ -5,6 +5,7 @@ import type { Entry, Item, Todo, View } from '../types'
 import { drawBox, drawView, type Layout, paletteOf } from './draw'
 import { type Answer, settledEntry, shownOf, streamingEntry } from './entry'
 import { toDisplay } from './display'
+import { maskItem } from './mask'
 import { appendText, applyTodos, isHidden, isTodoTool, lineArgs, type Places, parseRaw, RAW_LIMIT, TEXT_LIMIT } from './feed'
 import { feed, initialState, type State } from './partial'
 import { EN, languageOf, type Words, wordsOf } from './words'
@@ -19,7 +20,7 @@ import { EN, languageOf, type Words, wordsOf } from './words'
 
 const PANE = 'live'
 const CALLS = { plugin: 'live-viewer', key: 'calls' } as const
-const EMPTY: View = { items: [], todos: [], isWorking: false, isOff: false, seat: 'spinner' }
+const EMPTY: View = { items: [], todos: [], isWorking: false, isOff: false, isPaused: false, seat: 'spinner' }
 const calls = atom(CALLS, EMPTY)
 const PREVIEWED = new Set(['Write', 'Edit', 'Bash'])
 const SEND_GAP_MS = 33
@@ -39,6 +40,8 @@ type Other = { index: number; id: string; name: string; raw: string }
 // 세션(모듈)에 하나인 상태: 흐름 항목(상자는 본문 원문까지), 지금 스트리밍 중인 호출, 한 줄로 풀 상자 밖 도구,
 // 경로를 줄일 곳, /config 테마(아직 안 읽었으면 undefined), 패널 자리, 보내기 상태(마지막으로 보낸 때, 보낼 것이 있는지, 남은 것을 보낼 타이머 하나).
 let isOff = false
+let isPaused = false
+let isMasking = true
 let items: Item[] = []
 let live: Call | null = null
 let other: Other | null = null
@@ -301,7 +304,9 @@ function shownItem(item: Item): Item {
 }
 
 function snapshot(): View {
-  return { items: items.map(shownItem), todos, isWorking, isOff, seat: seatOf() }
+  if (isPaused) return { items: [], todos: [], isWorking, isOff, isPaused, seat: seatOf() }
+  const shown = items.map(shownItem)
+  return { items: isMasking ? shown.map(maskItem) : shown, todos, isWorking, isOff, isPaused, seat: seatOf() }
 }
 
 function flush($: EngineInterface): void {
@@ -498,6 +503,7 @@ export const register: Register = (on, options) => {
   words = wordsOf(languageOf(languageChoice, undefined, timeZone()))
   paletteChoice = options.palette
   setDebug(options.debug === true)
+  isMasking = options.mask !== false
   // 화면이 붙어 있을 때만 연다. 다시 띄운 세션은 앱 화면이 붙기 전에 시작해, 그때 열면
   // 'no-surface' 오류가 사용자에게 뜬다. 그런 세션은 session.attach에서 연다.
   on('session.start', ($, e, next) => {
@@ -520,9 +526,18 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('command.run', { command: 'live' }, async $ => {
-    isClosedByPerson = false
+  on('command.run', { command: 'live' }, async ($, e) => {
     await settleLanguage($)
+    const verb = e.args.trim()
+    if (verb === 'pause' || verb === 'resume') {
+      isPaused = verb === 'pause'
+      guard($, () => {
+        isDirty = true
+        flush($)
+      })
+      return { text: isPaused ? words.paused : words.resumed }
+    }
+    isClosedByPerson = false
     const result = await openPane($, 'command')
     guard($, () => {
       isDirty = true

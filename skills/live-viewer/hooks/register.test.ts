@@ -129,7 +129,7 @@ test('조각과 결과를 순서·값 그대로 넘기고, 쓰는 중인 Write�
     ],
     todos: [],
     isWorking: true,
-    isOff: false,
+    isOff: false, isPaused: false,
     seat: 'pane',
   })
 })
@@ -481,7 +481,7 @@ test('안 놓인 줄 알던 패널이 그려져도 그리기 중에 state를 쓰
   // 그리는 동안에는 쓰지 않고, 다음 차례에 놓였다고 적는다.
   expect(seen.sets.length).toBe(before)
   await clock.advance(1)
-  expect(last(seen)).toMatchObject({ isOff: false, seat: 'pane' })
+  expect(last(seen)).toMatchObject({ isOff: false, isPaused: false, seat: 'pane' })
 })
 
 test('debug가 꺼져 있으면(기본) 상태 파일을 쓰지 않는다', async ($, on) => {
@@ -510,3 +510,17 @@ for (const [name, options, title] of [['auto', {}, '코딩 뷰어'], ['en', EN, 
     expect(seen.titles).toEqual([title])
   })
 }
+
+test('/live pause는 내용을 비운 채 멈춤을 보내고, /live resume은 다시 보낸다', EN, async ($, on) => {
+  const clock = mock.clock(on)
+  const seen = world(on, WRITE)
+  await stream($)
+  expect(await $.command.run({ ...LIVE, args: 'pause' })).toMatchObject({ text: 'Paused the live viewer. /live resume shows it again.' })
+  await clock.settle()
+  expect(last(seen)).toMatchObject({ items: [], todos: [], isPaused: true })
+  expect(seen.opens).toBe(0)
+  await $.command.run({ ...LIVE, args: 'resume' })
+  await clock.settle()
+  expect(last(seen)?.isPaused).toBe(false)
+  expect(last(seen)?.items.length).toBeGreaterThan(0)
+})

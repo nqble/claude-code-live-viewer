@@ -369,6 +369,7 @@ function drawViewBody(els: ElementTable, view: View, layout: Layout): RenderElem
   const { Box, Text } = els
   const { palette, words } = layout
   if (view.isOff) return <Text color={palette.dim}>{words.off}</Text>
+  if (view.isPaused) return <Text color={palette.dim}>{words.pausedPane}</Text>
   if (view.items.length === 0 && view.todos.length === 0) return <Text color={palette.dim}>{words.empty}</Text>
   const working = workingWords(view)
   const todoRows = view.todos.length === 0 ? 0 : 2 + Math.min(view.todos.length, TODO_ROWS + 2)
