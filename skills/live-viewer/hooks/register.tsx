@@ -105,11 +105,12 @@ function keepLast(rows: StatusRow[], row: StatusRow): void {
 }
 
 // 상태 파일과 저장한 기록이 놓이는 곳: Claude 설정 폴더 아래 live-viewer/.
+// Windows에는 보통 HOME이 없고(Git Bash 등이 붙여 줄 때만 있다) USERPROFILE이 홈이다.
 async function viewerFolder($: EngineInterface): Promise<string> {
   const config = await $.env.get('CLAUDE_CONFIG_DIR')
-  const home = await $.env.get('HOME')
+  const home = (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE'))
   const base = config ?? (home === undefined ? undefined : `${home}/.claude`)
-  if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME is set')
+  if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME (USERPROFILE on Windows) is set')
   return `${base}/live-viewer`
 }
 

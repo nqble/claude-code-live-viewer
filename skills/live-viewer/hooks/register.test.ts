@@ -523,3 +523,10 @@ test('/live save는 지금 기록을 설정 폴더 아래 Markdown으로, save h
   expect(seen.statuses.at(-1)).toStartWith('<!doctype html>')
   expect(seen.opens).toBe(0)
 })
+
+test('Windows처럼 HOME 없이 USERPROFILE만 있어도 /live save가 쓴다', EN, async ($, on) => {
+  const seen = world(on, WRITE, { env: { USERPROFILE: 'C:\\Users\\test' } })
+  await stream($)
+  expect(await $.command.run({ ...LIVE, args: 'save' })).toMatchObject({ text: expect.stringContaining('C:\\Users\\test/.claude/live-viewer/logs/') })
+  expect(seen.writes.at(-1)).toEndWith('.md')
+})
