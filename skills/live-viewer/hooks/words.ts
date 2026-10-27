@@ -18,6 +18,8 @@ export type Words = {
   saved: (path: string) => string
   nothingToSave: string
   saveFailed: string
+  saveButton: string
+  saveHtmlButton: string
 }
 
 export const EN: Words = {
@@ -38,6 +40,8 @@ export const EN: Words = {
   saved: path => `Saved the live viewer history to ${path}`,
   nothingToSave: 'Nothing to save yet.',
   saveFailed: 'Could not save the history. Turn on the debug option to record why.',
+  saveButton: 'Save',
+  saveHtmlButton: 'Save as page',
 }
 
 export const KO: Words = {
@@ -58,6 +62,8 @@ export const KO: Words = {
   saved: path => `코딩 뷰어 기록을 저장했다: ${path}`,
   nothingToSave: '아직 저장할 것이 없다.',
   saveFailed: '기록을 저장하지 못했다. 까닭을 남기려면 debug 설정을 켠다.',
+  saveButton: '저장',
+  saveHtmlButton: '쪽으로 저장',
 }
 
 export type Language = 'en' | 'ko'

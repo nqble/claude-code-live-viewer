@@ -45,7 +45,7 @@ cp -R claude-code-live-viewer/skills/live-viewer ~/.claude/skills/
 
 Start a new Claude Code session. The **Live viewer** tab opens automatically. If you close it, `/live` brings it back.
 
-Type `/live save` to keep a Markdown copy of what the tab shows, or `/live save html` for a page you can open in a browser and print to PDF. Files go to `live-viewer/logs/` in the Claude config folder. They hold your tool calls as shown, so treat them like any other private file.
+In the desktop app the tab also has **Save** and **Save as page** buttons. Or type `/live save` to keep a Markdown copy of what the tab shows, or `/live save html` for a page you can open in a browser and print to PDF. Files go to `live-viewer/logs/` in the Claude config folder. They hold your tool calls as shown, so treat them like any other private file.
 
 If you installed an earlier version with `claude plugin install`, remove it so only one tab opens:
 

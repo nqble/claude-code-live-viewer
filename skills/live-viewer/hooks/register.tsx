@@ -27,6 +27,8 @@ const SEND_GAP_MS = 33
 const MAX_ITEMS = 20
 // 위에 붙는 패널은 그린 만큼 커지므로 본문 줄 수에 상한을 둔다. 진행 줄 자리는 대화창을 덜 밀도록 더 작게.
 const PANE_ROWS_LIMIT = 60
+// 저장 단추 줄이 차지하는 줄 수(단추 한 줄과 아래 빈 줄).
+const SAVE_ROW_ROWS = 2
 const SPINNER_ROWS = 16
 // 진행 줄 자리가 폭을 안 알려 줄 때.
 const SPINNER_COLUMNS = 80
@@ -109,22 +111,39 @@ function keepLast(rows: StatusRow[], row: StatusRow): void {
 async function viewerFolder($: EngineInterface): Promise<string> {
   const config = await $.env.get('CLAUDE_CONFIG_DIR')
   const home = (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE'))
-  const base = config ?? (home === undefined ? undefined : `${home}/.claude`)
+  const base = config ?? (home === undefined ? undefined : joinPath(home, '.claude'))
   if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME (USERPROFILE on Windows) is set')
-  return `${base}/live-viewer`
+  return joinPath(base, 'live-viewer')
+}
+
+// 바탕 경로가 쓰는 구분자로 잇는다. Windows 홈(C:\Users\…)에 /를 섞으면 동작은 하지만 알려 주는 경로가 어지럽다.
+function joinPath(base: string, ...parts: string[]): string {
+  const separator = base.includes('\\') && !base.includes('/') ? '\\' : '/'
+  return [base, ...parts].join(separator)
 }
 
 // 사람이 /live save로 부를 때만 쓴다. 파일 이름의 시각은 콜론 없이(Windows에서도 되는 이름).
 async function saveLog($: EngineInterface, format: SaveFormat): Promise<string> {
   const stamp = nowIso().replaceAll(':', '-').replace(/\.\d+Z$/, '')
-  const path = `${await viewerFolder($)}/logs/${await $.session.id()}-${stamp}.${format}`
+  const path = joinPath(await viewerFolder($), 'logs', `${await $.session.id()}-${stamp}.${format}`)
   const text = format === 'html' ? toHtml(words.title, items, todos) : toMarkdown(words.title, items, todos)
   await $.fs.write(path, text)
   return path
 }
 
+// /live save와 패널의 저장 단추가 함께 쓴다. 사람에게 알릴 글을 돌려준다.
+async function saveAnswer($: EngineInterface, format: SaveFormat): Promise<string> {
+  if (items.length === 0 && todos.length === 0) return words.nothingToSave
+  try {
+    return words.saved(await saveLog($, format))
+  } catch (error) {
+    noteError($, 'save', error)
+    return words.saveFailed
+  }
+}
+
 async function writeStatus($: EngineInterface): Promise<void> {
-  if (statusTarget === null) statusTarget = `${await viewerFolder($)}/status/${await $.session.id()}.json`
+  if (statusTarget === null) statusTarget = joinPath(await viewerFolder($), 'status', `${await $.session.id()}.json`)
   status.updated = nowIso()
   await $.fs.write(statusTarget, `${JSON.stringify(status, null, 1)}\n`)
 }
@@ -537,16 +556,7 @@ export const register: Register = (on, options) => {
   on('command.run', { command: 'live' }, async ($, e) => {
     await settleLanguage($)
     const format = saveFormatOf(e.args)
-    if (format !== null) {
-      if (items.length === 0 && todos.length === 0) return { text: words.nothingToSave }
-      return saveLog($, format).then(
-        path => ({ text: words.saved(path) }),
-        error => {
-          noteError($, 'save', error)
-          return { text: words.saveFailed }
-        },
-      )
-    }
+    if (format !== null) return { text: await saveAnswer($, format) }
     isClosedByPerson = false
     const result = await openPane($, 'command')
     guard($, () => {
@@ -626,7 +636,10 @@ export const register: Register = (on, options) => {
     // 바탕은 터미널에서만 칠한다(auto 팔레트가 /config 테마를 따라 호스트 글자색과 맞는다). 데스크톱은 앱 밝기를 몰라 칠하면
     // 다크 앱에서 글자가 묻힌다. 대화 옆에 붙은 패널은 바닥까지 채우고, 프롬프트 위 패널은 그린 만큼만 칠한다.
     const pageRows = e.surface !== 'terminal' ? null : placement === 'dock' ? scroll.bodyRows : 0
-    const layout: Layout = { surface: e.surface, columns: bodyColumns, rows: Math.min(PANE_ROWS_LIMIT, scroll.bodyRows), palette: paletteOf(paletteChoice, e.surface, await themeOf($, e.surface)), places, words, pageRows }
+    // 저장 단추는 터미널 밖(데스크톱 앱 등)에만 단다. 터미널은 한 줄이 아까워 /live save로 충분하다.
+    const onSave = e.surface === 'terminal' ? null : (format: SaveFormat) => void saveAnswer($, format).then(text => $.ui.toast(text))
+    const rows = Math.min(PANE_ROWS_LIMIT, scroll.bodyRows) - (onSave === null ? 0 : SAVE_ROW_ROWS)
+    const layout: Layout = { surface: e.surface, columns: bodyColumns, rows, onSave, palette: paletteOf(paletteChoice, e.surface, await themeOf($, e.surface)), places, words, pageRows }
     // 새 그림이면 그린 뒤 끝에 붙인다. 그리기 중에는 엔진 호출을 미룬다(위 state.set과 같은 까닭).
     if (isFollowing && followedSeq !== sentSeq) {
       followedSeq = sentSeq

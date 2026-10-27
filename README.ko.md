@@ -45,7 +45,7 @@ cp -R claude-code-live-viewer/skills/live-viewer ~/.claude/skills/
 
 새 Claude Code 세션을 시작하면 탭이 자동으로 열립니다. 탭을 닫았더라도 `/live`를 입력하면 다시 열립니다. 시스템 로캘이 한국어이거나 시간대가 서울(`Asia/Seoul`)이면 탭 제목과 UI가 한국어(**코딩 뷰어**)로 표시됩니다.
 
-`/live save`를 입력하면 탭에 보이는 내용을 Markdown으로, `/live save html`을 입력하면 브라우저에서 PDF로 인쇄할 수 있는 쪽으로 저장합니다. 파일은 Claude 설정 폴더의 `live-viewer/logs/`에 놓입니다. 보이는 도구 호출이 그대로 담기니 다른 개인 파일처럼 다루세요.
+데스크톱 앱에서는 탭 위의 **저장**·**쪽으로 저장** 단추로도 저장합니다. `/live save`를 입력하면 탭에 보이는 내용을 Markdown으로, `/live save html`을 입력하면 브라우저에서 PDF로 인쇄할 수 있는 쪽으로 저장합니다. 파일은 Claude 설정 폴더의 `live-viewer/logs/`에 놓입니다. 보이는 도구 호출이 그대로 담기니 다른 개인 파일처럼 다루세요.
 
 이전 버전을 `claude plugin install`로 설치했다면, 탭이 하나만 열리도록 그 설치를 지웁니다.
 

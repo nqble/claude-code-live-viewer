@@ -2,6 +2,7 @@ import type { ElementTable, RenderElement } from 'claude-code'
 
 import type { Entry, Item, Shown, Todo, View } from '../types'
 import { type Places, shortPath } from './feed'
+import type { SaveFormat } from './save'
 import type { Words } from './words'
 
 // omp(oh-my-pi 18.11) 화면을 본뜬 그림. 흐름을 위에서 아래로 시간순으로 그린다: Write·Edit·Bash는 상자,
@@ -61,7 +62,8 @@ export function paletteOf(choice: unknown, surface: string, theme: string | null
 }
 
 // 그릴 자리: 화면, 줄 폭, 쓸 수 있는 줄 수, 팔레트, 경로를 줄일 곳, 글자, 바탕을 칠할 최소 줄 수(null이면 안 칠함).
-export type Layout = { surface: string; columns: number; rows: number; palette: Palette; places: Places; words: Words; pageRows: number | null }
+// onSave가 있으면 맨 위에 저장 단추 줄을 단다(데스크톱 앱 등, 터미널은 null).
+export type Layout = { surface: string; columns: number; rows: number; palette: Palette; places: Places; words: Words; pageRows: number | null; onSave?: ((format: SaveFormat) => void) | null }
 
 const isPending = (entry: Entry) => entry.status === 'streaming' || entry.status === 'running'
 
@@ -355,11 +357,27 @@ function fit(items: readonly Item[], rows: number, columns: number): readonly It
 // 패널 본문 전체. 맨 겉 바탕은 omp처럼 팔레트 바탕색(page)으로 칠한다: 상자 바탕은 그보다 어둡고(밝고) 선은 그 반대라,
 // 안 칠하면 호스트 바탕(다크 테마의 검정)에 상자와 선이 묻힌다. pageRows가 null이면 칠하지 않는다.
 export function drawView(els: ElementTable, view: View, layout: Layout): RenderElement {
-  const body = drawViewBody(els, view, layout)
+  const body = withSaveRow(els, view, layout, drawViewBody(els, view, layout))
   if (layout.pageRows === null) return body
   const { Box } = els
   return (
     <Box flexDirection="column" backgroundColor={layout.palette.page} minHeight={layout.pageRows}>
+      {body}
+    </Box>
+  )
+}
+
+// 보여 줄 기록이 있을 때만 단추를 단다. 멈춘 패널·꺼진 패널에는 없다.
+function withSaveRow(els: ElementTable, view: View, layout: Layout, body: RenderElement): RenderElement {
+  const onSave = layout.onSave
+  if (onSave == null || view.isOff || (view.items.length === 0 && view.todos.length === 0)) return body
+  const { Box, Button } = els
+  return (
+    <Box flexDirection="column">
+      <Box flexDirection="row" gap="xs" marginBottom={1}>
+        <Button key="save-md" onPress={() => onSave('md')}>{layout.words.saveButton}</Button>
+        <Button key="save-html" onPress={() => onSave('html')}>{layout.words.saveHtmlButton}</Button>
+      </Box>
       {body}
     </Box>
   )

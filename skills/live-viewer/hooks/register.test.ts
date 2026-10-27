@@ -527,6 +527,27 @@ test('/live save는 지금 기록을 설정 폴더 아래 Markdown으로, save h
 test('Windows처럼 HOME 없이 USERPROFILE만 있어도 /live save가 쓴다', EN, async ($, on) => {
   const seen = world(on, WRITE, { env: { USERPROFILE: 'C:\\Users\\test' } })
   await stream($)
-  expect(await $.command.run({ ...LIVE, args: 'save' })).toMatchObject({ text: expect.stringContaining('C:\\Users\\test/.claude/live-viewer/logs/') })
+  expect(await $.command.run({ ...LIVE, args: 'save' })).toMatchObject({ text: expect.stringContaining('C:\\Users\\test\\.claude\\live-viewer\\logs\\') })
   expect(seen.writes.at(-1)).toEndWith('.md')
+})
+
+test('데스크톱 패널의 저장 단추는 기록을 쓰고 토스트로 알리며, 터미널 패널에는 단추가 없다', EN, async ($, on) => {
+  const clock = mock.clock(on)
+  const seen = world(on, WRITE)
+  const toasts: string[] = []
+  on('ui.toast', (_engine, e) => {
+    toasts.push(String(e.text))
+    return { value: undefined }
+  })
+  await stream($)
+  await clock.settle()
+  const terminal = await $.ui.mount({ plugin: 'live-viewer', surface: 'terminal', component: 'Pane', requestId: 'live', props: PANE_PROPS })
+  expect(await terminal.find({ type: 'Button' })).toBeUndefined()
+  await terminal.unmount()
+  const desktop = await $.ui.mount({ plugin: 'live-viewer', surface: 'desktop', component: 'Pane', requestId: 'live', props: PANE_PROPS })
+  await desktop.press({ key: 'save-html' })
+  await clock.settle()
+  expect(seen.writes.at(-1)).toEndWith('.html')
+  expect(toasts.at(-1)).toStartWith('Saved the live viewer history to ')
+  await desktop.unmount()
 })
