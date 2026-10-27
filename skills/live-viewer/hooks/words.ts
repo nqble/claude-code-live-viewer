@@ -15,11 +15,14 @@ export type Words = {
   overwritten: string
   interrupted: string
   denied: string
+  saved: (path: string) => string
+  nothingToSave: string
+  saveFailed: string
 }
 
 export const EN: Words = {
   title: 'Live viewer',
-  command: 'Open the live viewer tab (tool calls as Claude writes them)',
+  command: 'Open the live viewer tab (tool calls as Claude writes them). /live save keeps a Markdown copy, /live save html a printable page',
   empty: 'Tool calls show up here as Claude writes them.',
   off: 'live-viewer: turned off for this session after an error',
   opened: 'Opened the live viewer tab.',
@@ -32,11 +35,14 @@ export const EN: Words = {
   overwritten: 'overwritten',
   interrupted: 'interrupted',
   denied: 'denied',
+  saved: path => `Saved the live viewer history to ${path}`,
+  nothingToSave: 'Nothing to save yet.',
+  saveFailed: 'Could not save the history. Turn on the debug option to record why.',
 }
 
 export const KO: Words = {
   title: '코딩 뷰어',
-  command: '코딩 뷰어 탭을 연다(Claude가 쓰는 도구 호출을 실시간으로)',
+  command: '코딩 뷰어 탭을 연다(Claude가 쓰는 도구 호출을 실시간으로). /live save는 Markdown, /live save html은 인쇄용 쪽으로 저장',
   empty: 'Claude가 도구를 부르면 여기 실시간으로 찍힌다',
   off: 'live-viewer: 오류로 이 세션에서 관찰을 껐다',
   opened: '코딩 뷰어 탭을 열었다.',
@@ -49,6 +55,9 @@ export const KO: Words = {
   overwritten: '덮어씀',
   interrupted: '중단됨',
   denied: '거절됨',
+  saved: path => `코딩 뷰어 기록을 저장했다: ${path}`,
+  nothingToSave: '아직 저장할 것이 없다.',
+  saveFailed: '기록을 저장하지 못했다. 까닭을 남기려면 debug 설정을 켠다.',
 }
 
 export type Language = 'en' | 'ko'

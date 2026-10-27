@@ -5,6 +5,7 @@ import type { Entry, Item, Todo, View } from '../types'
 import { drawBox, drawView, type Layout, paletteOf } from './draw'
 import { type Answer, settledEntry, shownOf, streamingEntry } from './entry'
 import { toDisplay } from './display'
+import { saveFormatOf, type SaveFormat, toHtml, toMarkdown } from './save'
 import { appendText, applyTodos, isHidden, isTodoTool, lineArgs, type Places, parseRaw, RAW_LIMIT, TEXT_LIMIT } from './feed'
 import { feed, initialState, type State } from './partial'
 import { EN, languageOf, type Words, wordsOf } from './words'
@@ -103,14 +104,26 @@ function keepLast(rows: StatusRow[], row: StatusRow): void {
   if (rows.length > STATUS_KEEP) rows.splice(0, rows.length - STATUS_KEEP)
 }
 
+// 상태 파일과 저장한 기록이 놓이는 곳: Claude 설정 폴더 아래 live-viewer/.
+async function viewerFolder($: EngineInterface): Promise<string> {
+  const config = await $.env.get('CLAUDE_CONFIG_DIR')
+  const home = await $.env.get('HOME')
+  const base = config ?? (home === undefined ? undefined : `${home}/.claude`)
+  if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME is set')
+  return `${base}/live-viewer`
+}
+
+// 사람이 /live save로 부를 때만 쓴다. 파일 이름의 시각은 콜론 없이(Windows에서도 되는 이름).
+async function saveLog($: EngineInterface, format: SaveFormat): Promise<string> {
+  const stamp = nowIso().replaceAll(':', '-').replace(/\.\d+Z$/, '')
+  const path = `${await viewerFolder($)}/logs/${await $.session.id()}-${stamp}.${format}`
+  const text = format === 'html' ? toHtml(words.title, items, todos) : toMarkdown(words.title, items, todos)
+  await $.fs.write(path, text)
+  return path
+}
+
 async function writeStatus($: EngineInterface): Promise<void> {
-  if (statusTarget === null) {
-    const config = await $.env.get('CLAUDE_CONFIG_DIR')
-    const home = await $.env.get('HOME')
-    const base = config ?? (home === undefined ? undefined : `${home}/.claude`)
-    if (base === undefined) throw new Error('neither CLAUDE_CONFIG_DIR nor HOME is set')
-    statusTarget = `${base}/live-viewer/status/${await $.session.id()}.json`
-  }
+  if (statusTarget === null) statusTarget = `${await viewerFolder($)}/status/${await $.session.id()}.json`
   status.updated = nowIso()
   await $.fs.write(statusTarget, `${JSON.stringify(status, null, 1)}\n`)
 }
@@ -520,9 +533,20 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('command.run', { command: 'live' }, async $ => {
-    isClosedByPerson = false
+  on('command.run', { command: 'live' }, async ($, e) => {
     await settleLanguage($)
+    const format = saveFormatOf(e.args)
+    if (format !== null) {
+      if (items.length === 0 && todos.length === 0) return { text: words.nothingToSave }
+      return saveLog($, format).then(
+        path => ({ text: words.saved(path) }),
+        error => {
+          noteError($, 'save', error)
+          return { text: words.saveFailed }
+        },
+      )
+    }
+    isClosedByPerson = false
     const result = await openPane($, 'command')
     guard($, () => {
       isDirty = true

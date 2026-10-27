@@ -510,3 +510,16 @@ for (const [name, options, title] of [['auto', {}, '코딩 뷰어'], ['en', EN, 
     expect(seen.titles).toEqual([title])
   })
 }
+
+test('/live save는 지금 기록을 설정 폴더 아래 Markdown으로, save html은 인쇄용 쪽으로 쓴다', EN, async ($, on) => {
+  const seen = world(on, WRITE)
+  expect(await $.command.run({ ...LIVE, args: 'save' })).toMatchObject({ text: 'Nothing to save yet.' })
+  await stream($)
+  const md = await $.command.run({ ...LIVE, args: 'save' })
+  expect(md).toMatchObject({ text: expect.stringMatching(/^Saved the live viewer history to \/home\/test\/\.claude\/live-viewer\/logs\/test-session-.+\.md$/) })
+  expect(seen.statuses.at(-1)).toContain('### Write')
+  await $.command.run({ ...LIVE, args: 'save html' })
+  expect(seen.writes.at(-1)).toEndWith('.html')
+  expect(seen.statuses.at(-1)).toStartWith('<!doctype html>')
+  expect(seen.opens).toBe(0)
+})
